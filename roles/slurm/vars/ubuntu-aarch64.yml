@@ -1,0 +1,21 @@
+---
+slurm_pam_lib_dir: /lib/aarch64-linux-gnu/security
+
+slurm_build_deps:
+  - build-essential
+  - libmunge-dev
+  - libmariadb-client-lgpl-dev
+  - libmysqlclient-dev
+  - libpam0g-dev
+  - python-minimal
+  - ruby-dev
+  - grub-efi-arm64
+  - wget
+
+slurm_pmix_deps:
+  - build-essential
+  - libev-dev
+  - libevent-dev
+
+slurm_hwloc_deps:
+  - build-essential
