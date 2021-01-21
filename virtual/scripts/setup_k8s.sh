@@ -25,7 +25,6 @@ fi
 # Deploy the K8s cluster
 ansible-playbook \
 	-b -i "${VIRT_DIR}/config/inventory" \
-	-e "@${VIRT_DIR}/vars_files/virt_k8s.yml" \
 	${ansible_extra_args} \
 	"${ROOT_DIR}/playbooks/k8s-cluster.yml"
 
@@ -43,9 +42,6 @@ kubectl get nodes
 
 # Deploy dashboard (optional)
 "${ROOT_DIR}/scripts/k8s/deploy_dashboard_user.sh"
-
-# Deploy rook (optional, but highly recommended)
-"${ROOT_DIR}/scripts/k8s/deploy_rook.sh"
 
 # Deploy load balancer and ingress (optional but recommended)
 "${ROOT_DIR}/scripts/k8s/deploy_loadbalancer.sh"

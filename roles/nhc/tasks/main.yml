@@ -27,12 +27,10 @@
   when: nhc_check.rc == 0 and not nhc_force_reinstall
 
 - name: install build dependencies
-  apt:
+  package:
     name: "{{ item }}"
     state: present
-    update_cache: yes
   with_items: "{{ nhc_build_deps }}"
-  when: ansible_distribution == 'Ubuntu'
 
 - name: ensure build dir exists
   file:
@@ -101,7 +99,7 @@
 
 - name: add sysconfig to use slurm
   template:
-    src: "sysconfig_nhc.j2"
+    src: "{{ nhc_sysconfig_template }}"
     dest: "{{ nhc_sysconfig_dir }}/nhc"
     owner: root
     group: root

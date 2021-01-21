@@ -14,10 +14,17 @@
 
 # Configure hostnames, /etc/hosts
 - include: generic/hosts.yml
+  when: "{{ slurm_configure_etc_hosts | default(true) }}"
+  tags:
+  - set-etc-hosts
 
 # Configure Chrony (NTP) sync
 - include: generic/chrony-client.yml
   when: chrony_install
+
+# Set up a local cluster container registry
+- include: container/standalone-container-registry.yml hostlist=slurm-master
+  when: slurm_enable_container_registry|default(true)
 
 # Install NVIDIA driver
 - include: nvidia-software/nvidia-driver.yml
@@ -60,15 +67,25 @@
   when: slurm_install_lmod
 
 # Install the NVIDIA HPC SDK
-- include: nvidia-software/nvidia-hpc-sdk.yml hostlist=slurm-master[0]
+- include: nvidia-software/nvidia-hpc-sdk.yml
+  vars:
+    hostlist: "{{ sm_install_host | default('slurm-master[0]')}}"
   when: slurm_install_hpcsdk
 
-# Install monitoring tools
-- include: slurm-cluster/prometheus.yml hostlist=slurm-master[0]
+# Install monitoring services
+- include: slurm-cluster/prometheus.yml
+  vars:
+    hostlist: "{{ slurm_monitoring_group | default('slurm-master[0]') }}"
   when: slurm_enable_monitoring
-- include: slurm-cluster/grafana.yml hostlist=slurm-master[0]
+- include: slurm-cluster/grafana.yml
+  vars:
+    hostlist: "{{ slurm_monitoring_group | default('slurm-master[0]') }}"
   when: slurm_enable_monitoring
-- include: slurm-cluster/prometheus-slurm-exporter.yml hostlist=slurm-master[0]
+
+# Install monitoring exporters
+- include: slurm-cluster/prometheus-slurm-exporter.yml
+  vars:
+    hostlist: "{{ slurm_monitoring_group | default('slurm-master[0]') }}"
   when: slurm_enable_monitoring
 - include: slurm-cluster/prometheus-node-exporter.yml
   when: slurm_enable_monitoring
