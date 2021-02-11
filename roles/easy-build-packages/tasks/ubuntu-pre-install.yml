@@ -10,4 +10,5 @@
       - build-essential
       - libsysfs-dev
       - libibverbs-dev
+      - binutils
 
