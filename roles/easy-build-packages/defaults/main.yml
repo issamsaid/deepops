@@ -1,1 +1,2 @@
 sm_files_path: "{{ sm_prefix }}/easyconfigs"
+
