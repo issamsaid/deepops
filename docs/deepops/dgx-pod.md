@@ -174,7 +174,7 @@ k8-mgmt03        Ready    master   21m   v1.12.5
 
    If you already have DHCP, DNS, or PXE servers you can skip this step.
 
-   Follow the setup, configure, and deploy instructions in the [DGXie Guide](dgxie.md).
+   Follow the setup, configure, and deploy instructions in the [DGXie Guide](../pxe/dgxie-on-k8s.md).
 
 
 > Note: The following K8s services are especially helpful for air-gapped environments
@@ -379,7 +379,7 @@ The services can be reached from the following addresses:
 
 #### Logging
 
-Follow the [ELK Guide](elk.md) to setup logging in the cluster.
+Follow the [ELK Guide](../k8s-cluster/logging.md) to setup logging in the cluster.
 
 The service can be reached from the following address:
 * Kibana: http://\<kube-master\>:30700
