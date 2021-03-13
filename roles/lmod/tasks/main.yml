@@ -2,6 +2,17 @@
 # ansible role to install lmod:
 #
 ---
+- name: gather os specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+      - "{{ ansible_distribution|lower }}-{{ ansible_architecture|lower }}.yml"
+      - "{{ ansible_distribution|lower }}.yml"
+      - "{{ ansible_os_family|lower }}.yml"
+      paths:
+      - ../vars
+      skip: true
+
 - name: RedHat | add epel repo
   become: yes
   yum:
@@ -11,7 +22,7 @@
   environment: "{{proxy_env if proxy_env is defined else {}}}"
   when: ansible_os_family == "RedHat"
 
-- name: "install packages"
+- name: install packages
   become: yes
   apt:
     name:
@@ -21,7 +32,7 @@
     state: present
   when: ansible_os_family == "Debian"
 
-- name: "install packages"
+- name: install packages
   become: yes
   yum:
     name:
@@ -30,7 +41,7 @@
     - Lmod
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "7"
 
-- name: "install packages"
+- name: install packages
   become: yes
   dnf:
     name:
@@ -40,15 +51,15 @@
     enablerepo: powertools
   when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "8"
 
-- name: "mkdir software path"
+- name: mkdir software path
   become: yes
   file: path={{ sm_software_path }} state=directory
 
-- name: "mkdir module path"
+- name: mkdir module path
   become: yes
   file: path={{ sm_module_path }} state=directory 
 
-- name: "configure sh profile"
+- name: configure bash profile
   become: yes
   template:
     src: templates/z00_lmod.sh
@@ -56,10 +67,8 @@
     owner: root
     group: root
     mode: 0777
-  tags:
-    - configuration
-
-- name: "configure csh profile"
+  
+- name: configure csh profile
   become: yes
   template:
     src: templates/z00_lmod.csh
@@ -67,36 +76,61 @@
     owner: root
     group: root
     mode: 0777
-  tags:
-    - configuration
-
+  
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=891541
-- name: "bugfix for lomd posix_c"
+# lmod does not create posix.so in system libraries sir
+# fix: symlink posix_c.so into posix.so
+- name: x86_64 | bugfix for lomd posix_c
   become: yes
-  shell: |
-    ln -s -f /usr/lib/x86_64-linux-gnu/lua/5.1/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.1/posix.so
-    ln -s -f /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
-    ln -s -f /usr/lib/x86_64-linux-gnu/lua/5.3/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.3/posix.so
+  file:
+    src: "{{ lmod_sys_lib_dir }}/{{ item }}/posix_c.so"
+    dest: "{{ lmod_sys_lib_dir }}/{{ item }}/posix.so"
+    state: link
+    force: yes
+  with_items:
+    - 5.1
+    - 5.2
+    - 5.3
   when: 
     - ansible_distribution == 'Ubuntu'
     - ansible_distribution_version == '18.04'
 
-- name: "unset previous lmod setup"
+# https://bugs.launchpad.net/ubuntu/+source/lmod/+bug/1850237
+# lmod has incorrect SYS_LUA_CPATH on arm64
+# fix: sed -i 's/x86_64/aarch64/g' /usr/share/lmod/lmod/libexec/lmod
+- name: aarch64 | bugfix find lua config files
+  become: yes
+  find:
+    paths: "/usr/share/lmod/lmod/libexec"
+    patterns: "*"
+    recurse: yes
+  register: lua_config
+
+- name: aarch64 | bugfix for sys_lua_path set the right arch
+  become: yes
+  replace:
+    path: "{{ item.path }}"
+    regexp: 'x86_64-linux-gnu'
+    replace: 'aarch64-linux-gnu'
+  with_items: "{{ lua_config.files }}"
+  when: ansible_os_family == "Debian" and ansible_architecture == "aarch64"
+
+- name: unset previous lmod setup
   shell: unset MODULEPATH_ROOT
   args:
     executable: /bin/bash
 
-- name: "unset previous lmod setup"
+- name: unset previous lmod setup
   shell: unsetenv MODULEPATH_ROOT
   args:
     executable: /bin/csh
 
-- name: "auto load lmod"
+- name: auto load lmod
   shell: . /etc/profile.d/z00_lmod.sh
   args:
     executable: /bin/bash
 
-- name: "auto load lmod "
+- name: auto load lmod
   shell: source /etc/profile.d/z00_lmod.csh
   args:
     executable: /bin/csh
